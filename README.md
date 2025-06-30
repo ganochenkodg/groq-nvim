@@ -36,6 +36,12 @@ lua << EOF
     model = "llama3-70b-8192"
   })
 EOF
+
+cabbrev GG GroqGenerate
+cabbrev GE GroqEdit
+cabbrev GEB %GroqEdit
+cabbrev GO GroqOptimize
+cabbrev GOB %GroqOptimize
 ```
 
 You can find a list of available models [here](https://console.groq.com/docs/models).
@@ -47,16 +53,12 @@ These are the current available commands
 ```
 - :GroqGenerate
 
-- :GroqGenerateWithContext
-
 - :GroqEdit
 
 - :GroqOptimize
 ```
 
-To use GroqGenerate, all you do is :GroqGenerate your prompt and the code will be generated at the place of the cursor
-
-To use GroqGenerateWithContext, you start with :GroqGenerateWithContext your prompt /path/to/context/file.py 
+To use GroqGenerate, run :GroqGenerate your prompt and the code will be generated at the place of the cursor
 
 To use GroqEdit, select some text and run :GroqEdit your prompt, or use :5,10GroqEdit your prompt. The selected code will be rewritten based on your prompt
 

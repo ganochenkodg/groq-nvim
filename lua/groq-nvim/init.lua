@@ -1,32 +1,31 @@
-local M = {}
+local Groq = {}
 local curl = require('plenary.curl')
 local json = vim.json
 
-M.config = {
+Groq.config = {
   api_url = "https://api.groq.com/openai/v1/chat/completions",
 }
 
-M.original_text = nil
-M.original_range = nil
+Groq.original_text = nil
+Groq.original_range = nil
 
-function M.setup(opts)
-  M.config = vim.tbl_extend("force", M.config, opts or {})
-  if not M.config.api_key then
+function Groq.setup(opts)
+  Groq.config = vim.tbl_extend("force", Groq.config, opts or {})
+  if not Groq.config.api_key then
     error("Groq API key not set. Please set it in the setup function.")
   end
-  vim.api.nvim_create_user_command("GroqGenerate", M.generate_code, {nargs = 1})
-  vim.api.nvim_create_user_command("GroqGenerateWithContext", M.generate_code_with_context, {nargs = '+', complete = 'file'})
-  vim.api.nvim_create_user_command("GroqEdit", M.edit_code, {range = true, nargs = '?'})
-  vim.api.nvim_create_user_command("GroqOptimize", M.optimize_code, {range = true})
+  vim.api.nvim_create_user_command("GroqGenerate", Groq.generate_code, {nargs = 1})
+  vim.api.nvim_create_user_command("GroqEdit", Groq.edit_code, {range = true, nargs = '?'})
+  vim.api.nvim_create_user_command("GroqOptimize", Groq.optimize_code, {range = true})
 end
 
 local function call_groq_api_stream(messages, callback)
   local job_id = vim.fn.jobstart({"curl", "-sS", "-N",
-    M.config.api_url,
-    "-H", "Authorization: Bearer " .. M.config.api_key,
+    Groq.config.api_url,
+    "-H", "Authorization: Bearer " .. Groq.config.api_key,
     "-H", "Content-Type: application/json",
     "-d", json.encode({
-      model = M.config.model,
+      model = Groq.config.model,
       messages = messages,
       stream = true
     })
@@ -64,7 +63,7 @@ local function stream_and_insert(messages, row, col)
   end)
 end
 
-function M.generate_code(opts)
+function Groq.generate_code(opts)
   local prompt = opts.args
   local messages = {
 	  {role = "system", content = "You are a helpful senior coding assistant. Based on the users prompt, write the code. Consider code quality, adherence to best practices, readability and maintainability. Keep the code simple and elegant as possible, and follow best practices. Only generate the requested code with no additional formatting or text, including backticks. The code you generate is written directly to the current file so make sure it is valid code."},
@@ -74,7 +73,7 @@ function M.generate_code(opts)
   stream_and_insert(messages, row, col)
 end
 
-function M.edit_code(opts)
+function Groq.edit_code(opts)
   local start_line = opts.line1 - 1
   local end_line = opts.line2
   local selected_text = table.concat(vim.api.nvim_buf_get_lines(0, start_line, end_line, false), "\n")
@@ -88,7 +87,7 @@ function M.edit_code(opts)
   stream_and_insert(messages, row, col)
 end
 
-function M.optimize_code(opts)
+function Groq.optimize_code(opts)
   local start_line = opts.line1 - 1
   local end_line = opts.line2
   local selected_text = table.concat(vim.api.nvim_buf_get_lines(0, start_line, end_line, false), "\n")
@@ -101,31 +100,4 @@ function M.optimize_code(opts)
   stream_and_insert(messages, row, col)
 end
 
-function M.get_file_content(file_path)
-  local file = io.open(file_path, "rb")
-  if not file then
-    print("Error: Unable to open file " .. file_path)
-    return nil
-  end
-  local content = file:read("*a")
-  file:close()
-  return content
-end
-
-function M.generate_code_with_context(opts)
-  local prompt = table.concat(opts.fargs, " ", 1, #opts.fargs - 1)
-  local context = opts.fargs[#opts.fargs]
-  local file_content = M.get_file_content(context)
-  if not file_content then
-    print("Error: Unable to read context file")
-    return
-  end
-  local messages = {
-    {role = "system", content = "You are a helpful senior coding assistant. Based on the users prompt and context, write the code. Consider code quality, adherence to best practices, readability and maintainability. Keep the code simple and elegant as possible, and follow best practices. Only generate the requested code with no additional formatting or text, including backticks. The code you generate is written directly to the current file so make sure it is valid code."},
-    {role = "user", content = prompt .. file_content}
-  }
-  local row, col = unpack(vim.api.nvim_win_get_cursor(0))
-  stream_and_insert(messages, row, col)
-end
-
-return M
+return Groq
