@@ -50,6 +50,8 @@ local function call_groq_api_stream(messages, callback)
       end
     end,
     on_exit = function()
+      vim.api.nvim_echo({{"", "None"}}, false, {})
+      vim.cmd("redraw")
       callback(nil)
     end
   })
