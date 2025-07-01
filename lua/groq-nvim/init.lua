@@ -20,6 +20,8 @@ function Groq.setup(opts)
 end
 
 local function call_groq_api_stream(messages, callback)
+  local spinner_frames = {"-", "\\", "|", "/"}
+  local spinner_index = 1
   local job_id = vim.fn.jobstart({"curl", "-sS", "-N",
     Groq.config.api_url,
     "-H", "Authorization: Bearer " .. Groq.config.api_key,
@@ -35,12 +37,16 @@ local function call_groq_api_stream(messages, callback)
         if line:sub(1, 6) == "data: " then
           local raw_data = line:sub(7)
           if raw_data ~= "[DONE]" then
-            local success, parsed_data = pcall(json.decode, raw_data)
+            local success, parsed_data = pcall(vim.fn.json_decode, raw_data)
             if success and parsed_data.choices and parsed_data.choices[1].delta.content then
               callback(parsed_data.choices[1].delta.content)
-            end
+             end
           end
         end
+
+        vim.api.nvim_echo({{spinner_frames[spinner_index], "None"}}, false, {})
+        vim.cmd("redraw")
+        spinner_index = spinner_index % #spinner_frames + 1
       end
     end,
     on_exit = function()
